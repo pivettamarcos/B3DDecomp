@@ -184,10 +184,13 @@ static class ConvertConstantsToFinalRepresentation
                 case BeforeExpression beforeExpression:
                     return new BeforeExpression(map(beforeExpression.OriginalExpression, declType));
                 case CallExpression callExpression:
-                    var arguments = new Expression[callExpression.Callee.Parameters.Count];
+                    var arguments = new Expression[callExpression.Arguments.Length];
                     for (int i = 0; i < arguments.Length; i++)
                     {
-                        arguments[i] = map(callExpression.Arguments[i], callExpression.Callee.Parameters[i].DeclType);
+                        DeclType? argumentType = i < callExpression.Callee.Parameters.Count
+                            ? callExpression.Callee.Parameters[i].DeclType
+                            : null;
+                        arguments[i] = map(callExpression.Arguments[i], argumentType);
                     }
                     return new CallExpression(callExpression.Callee, arguments);
                 case ConstantExpression constantExpression:

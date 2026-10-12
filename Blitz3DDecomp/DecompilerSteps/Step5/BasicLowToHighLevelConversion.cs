@@ -169,6 +169,15 @@ static class BasicLowToHighLevelConversion
                     if (instruction.DestArg.Contains("_builtIn__bbNullObjEx", StringComparison.Ordinal)
                         || instruction.DestArg.Contains("_builtIn__bbVecBoundsEx", StringComparison.Ordinal)
                         || instruction.DestArg.Contains("_builtIn__bbArrayBoundsEx", StringComparison.Ordinal)) { continue; }
+                    if (lastCompareExpression is null && i > 0)
+                    {
+                        var previousInstruction = assemblySection.Instructions[i - 1];
+                        if (previousInstruction.Name == "and"
+                            && previousInstruction.DestArg == previousInstruction.SrcArg1)
+                        {
+                            lastCompareExpression = instructionArgToExpression(previousInstruction.DestArg);
+                        }
+                    }
                     if (lastCompareExpression is null) { throw new Exception($"No expression ready for {instruction}"); }
 
                     highLevelSection.Statements.Add(new JumpIfExpressionStatement(instruction.Name switch
