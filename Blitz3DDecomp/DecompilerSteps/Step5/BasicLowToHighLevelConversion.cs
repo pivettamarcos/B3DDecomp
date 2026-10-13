@@ -11,7 +11,7 @@ static class BasicLowToHighLevelConversion
     private sealed class Context
     {
         public readonly Dictionary<Function.DecompGeneratedTempVariable, Expression> TempToExpression = new();
-        public readonly Dictionary<DimSizeAssignment, Function.DecompGeneratedTempVariable> DimSizeAssignmentToVar = new();
+        public readonly Dictionary<DimSizeAssignment, Expression> DimSizeAssignmentToExpression = new();
         public readonly Stack<Expression> FloatStack = new();
         public Expression? LastPotentialReturnExpression = null;
     };
@@ -303,7 +303,7 @@ static class BasicLowToHighLevelConversion
                         && instruction.SrcArg2.TryHexToUint32(out var dimSymbolOffset)
                         && function.InstructionArgumentToVariable(instruction.DestArg) is Function.DecompGeneratedTempVariable dimSizeDestVar)
                     {
-                        context.DimSizeAssignmentToVar[new DimSizeAssignment(dimArray, (int)((dimSymbolOffset - 0xc) >> 2))] = dimSizeDestVar;
+                        context.DimSizeAssignmentToExpression[new DimSizeAssignment(dimArray, (int)((dimSymbolOffset - 0xc) >> 2))] = new VariableExpression(dimSizeDestVar);
                     }
 
                     lhsExpression = instructionArgToExpression(instruction.SrcArg1);
@@ -427,8 +427,10 @@ static class BasicLowToHighLevelConversion
                         var sizeAssignmentExpressions = new Expression[dim.NumDimensions];
                         for (int j = 0; j < dim.NumDimensions; j++)
                         {
-                            var sizeAssignmentVariable = context.DimSizeAssignmentToVar.First(kvp => kvp.Key.Array == dim && kvp.Key.Dimension == j);
-                            sizeAssignmentExpressions[j] = instructionArgToExpression(sizeAssignmentVariable.Value.Name);
+                            var sizeAssignment = context.DimSizeAssignmentToExpression.First(kvp => kvp.Key.Array == dim && kvp.Key.Dimension == j);
+                            sizeAssignmentExpressions[j] = sizeAssignment.Value.Map(expression => expression is VariableExpression { Variable: Function.DecompGeneratedTempVariable tempVar }
+                                ? context.TempToExpression.GetValueOrDefault(tempVar, expression)
+                                : expression);
                         }
                         highLevelSection.Statements.Add(new AllocateDimStatement(dim, sizeAssignmentExpressions));
                     }
@@ -625,9 +627,21 @@ static class BasicLowToHighLevelConversion
                     }
                     break;
                 case "mov" or "lea":
+                    srcExpression = instructionArgToExpression(instruction.SrcArg1);
+                    if (instruction.Name == "mov" && instruction.DestArg.StartsWith("[", StringComparison.Ordinal))
+                    {
+                        var destinationVariable = function.InstructionArgumentToVariable(instruction.DestArg);
+                        foreach (var dimSizeAssignment in context.DimSizeAssignmentToExpression.ToArray())
+                        {
+                            if (dimSizeAssignment.Value is VariableExpression { Variable: var variable }
+                                && variable == destinationVariable)
+                            {
+                                context.DimSizeAssignmentToExpression[dimSizeAssignment.Key] = srcExpression;
+                            }
+                        }
+                    }
                     if (instruction.SrcArg1.IsRegister()) { continue; }
 
-                    srcExpression = instructionArgToExpression(instruction.SrcArg1);
                     handleAssignmentToInstructionArg(instruction.DestArg, srcExpression);
                     break;
                 case "xchg":
