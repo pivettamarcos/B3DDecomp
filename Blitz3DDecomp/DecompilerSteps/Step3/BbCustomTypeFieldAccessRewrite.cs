@@ -85,6 +85,19 @@ static class BbCustomTypeFieldAccessRewrite
             local.DeclType = new DeclType(".astardata");
             somethingChanged = true;
         }
+        if (function.Name.StartsWith("avatar", StringComparison.Ordinal)
+            && function.Parameters.FirstOrDefault() is { DeclType.Suffix: ".tclient" } avatarParameter)
+        {
+            avatarParameter.DeclType = new DeclType(".tavatar");
+            somethingChanged = true;
+        }
+        if (function.Name == "readglwchunks"
+            && function.LocalVariables.FirstOrDefault(local => local.Name == "local4") is { DeclType: var frameType } frame
+            && !frameType.IsCustomType)
+        {
+            frame.DeclType = new DeclType(".gentframe");
+            somethingChanged = true;
+        }
         if (function.Name == "astarfindpath"
             && function.DecompGeneratedTempVars.GetValueOrDefault("eax_003D") is { } temp
             && temp.DeclType == DeclType.Unknown)

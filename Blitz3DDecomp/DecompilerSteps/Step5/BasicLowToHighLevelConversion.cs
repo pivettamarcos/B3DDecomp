@@ -372,6 +372,10 @@ static class BasicLowToHighLevelConversion
                             var assignInstruction = function.Instructions[assignmentIndices[j]];
                             arguments.Add(instructionArgToExpression(assignInstruction.SrcArg1));
                         }
+                        if (callee.AssemblySections.Length > 0 && arguments.Count > callee.Parameters.Count)
+                        {
+                            arguments = arguments.TakeLast(callee.Parameters.Count).ToList();
+                        }
 
                         if (callee.ReturnType == DeclType.Float)
                         {

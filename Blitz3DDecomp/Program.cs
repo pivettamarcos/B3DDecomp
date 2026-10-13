@@ -465,6 +465,12 @@ internal static class Program
             {
                 writeLineToFile(indentation, $"Local {local.Name}{local.DeclType.Suffix}");
             }
+            foreach (var temp in function.DecompGeneratedTempVars.Values
+                .Where(temp => temp.DeclType != DeclType.Pointer)
+                .OrderBy(temp => temp.Name))
+            {
+                writeLineToFile(indentation, $"Local {temp.Name}{temp.DeclType.Suffix}");
+            }
             foreach (var section in function.HighLevelSections)
             {
                 if (referencedSections.Contains(section.Name))

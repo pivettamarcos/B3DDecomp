@@ -85,6 +85,9 @@ static class CollectCalls
 
         if (function != null)
         {
+            foundArgs = foundArgs
+                .Where(kvp => kvp.Key < function.Parameters.Count * 4)
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             var foundArgumentCount = foundArgs.Keys.DefaultIfEmpty(-4).Max() / 4 + 1;
             while (function.Parameters.Count < foundArgumentCount)
             {
