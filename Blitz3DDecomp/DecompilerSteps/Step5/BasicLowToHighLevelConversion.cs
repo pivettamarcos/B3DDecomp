@@ -228,10 +228,15 @@ static class BasicLowToHighLevelConversion
                     break;
                 case "jmp":
                     var jmpSectionName = instruction.DestArg[1..];
-                    if (jmpSectionName.EndsWith($"_leave_f{function.Name}", StringComparison.Ordinal)
-                        && context.LastPotentialReturnExpression != null)
+                    if (jmpSectionName.EndsWith($"_leave_f{function.Name}", StringComparison.Ordinal))
                     {
-                        highLevelSection.Statements.Add(new ReturnStatement(context.LastPotentialReturnExpression));
+                        if (context.LastPotentialReturnExpression is { } returnExpression)
+                        {
+                            highLevelSection.Statements.Add(new ReturnStatement(returnExpression));
+                        }
+
+                        // The epilogue jump ends this basic block; instructions after it are unreachable.
+                        return;
                     }
                     else
                     {
