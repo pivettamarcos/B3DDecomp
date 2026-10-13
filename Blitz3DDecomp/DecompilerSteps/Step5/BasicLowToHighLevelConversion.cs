@@ -420,8 +420,13 @@ static class BasicLowToHighLevelConversion
 
                         highLevelSection.Statements.Add(new ForEachStatement(accessExpression, CustomType.GetTypeWithName(typeName[3..])));
 
-                        var andInstruction = assemblySection.Instructions[i + 1];
-                        var jzInstruction = assemblySection.Instructions[i + 2];
+                        var andIndex = i + 1;
+                        if (assemblySection.Instructions[andIndex] is { Name: "add" or "sub", DestArg: "esp" })
+                        {
+                            andIndex++;
+                        }
+                        var andInstruction = assemblySection.Instructions[andIndex];
+                        var jzInstruction = assemblySection.Instructions[andIndex + 1];
                         if (andInstruction.Name != "and"
                             || andInstruction.DestArg != calleeReturnOutputVar.Name
                             || andInstruction.SrcArg1 != calleeReturnOutputVar.Name
@@ -429,14 +434,19 @@ static class BasicLowToHighLevelConversion
                         {
                             Debugger.Break();
                         }
-                        i += 2;
+                        i = andIndex + 1;
                     }
                     else if (callee.Name is "_builtIn__bbObjEachNext" or "_builtIn__bbObjEachNext2")
                     {
                         highLevelSection.Statements.Add(new NextStatement());
 
-                        var andInstruction = assemblySection.Instructions[i + 1];
-                        var jnzInstruction = assemblySection.Instructions[i + 2];
+                        var andIndex = i + 1;
+                        if (assemblySection.Instructions[andIndex] is { Name: "add" or "sub", DestArg: "esp" })
+                        {
+                            andIndex++;
+                        }
+                        var andInstruction = assemblySection.Instructions[andIndex];
+                        var jnzInstruction = assemblySection.Instructions[andIndex + 1];
                         if (andInstruction.Name != "and"
                             || andInstruction.DestArg != calleeReturnOutputVar.Name
                             || andInstruction.SrcArg1 != calleeReturnOutputVar.Name
@@ -444,7 +454,7 @@ static class BasicLowToHighLevelConversion
                         {
                             Debugger.Break();
                         }
-                        i += 2;
+                        i = andIndex + 1;
                     }
                     else if (callee.Name == "_builtIn__bbObjFirst")
                     {
