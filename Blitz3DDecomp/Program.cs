@@ -461,12 +461,28 @@ internal static class Program
             {
                 file.Write(Encoding.UTF8.GetBytes($"{indent}{line}\n"));
             }
+            var referencedTemps = new HashSet<Function.DecompGeneratedTempVariable>();
+            foreach (var statement in function.HighLevelStatements)
+            {
+                var expressions = statement.InnerExpressions.ToArray();
+                while (expressions.Length > 0)
+                {
+                    foreach (var expression in expressions)
+                    {
+                        if (expression is VariableExpression { Variable: Function.DecompGeneratedTempVariable temp })
+                        {
+                            referencedTemps.Add(temp);
+                        }
+                    }
+                    expressions = expressions.SelectMany(expression => expression.InnerExpressions).ToArray();
+                }
+            }
             foreach (var local in function.LocalVariables)
             {
                 writeLineToFile(indentation, $"Local {local.Name}{local.DeclType.Suffix}");
             }
             foreach (var temp in function.DecompGeneratedTempVars.Values
-                .Where(temp => temp.DeclType != DeclType.Pointer)
+                .Where(temp => temp.DeclType != DeclType.Pointer && referencedTemps.Contains(temp))
                 .OrderBy(temp => temp.Name))
             {
                 writeLineToFile(indentation, $"Local {temp.Name}{temp.DeclType.Suffix}");
