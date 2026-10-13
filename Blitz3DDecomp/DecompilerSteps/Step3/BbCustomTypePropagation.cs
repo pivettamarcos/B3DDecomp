@@ -82,6 +82,7 @@ static class BbCustomTypePropagation
 
     private static bool HandleStoreCall(AssemblySection section, Instruction instruction)
     {
+        bool somethingChanged = false;
         if (instruction.Name != "call") { return false; }
         if (!instruction.DestArg.Contains("_builtIn__", StringComparison.OrdinalIgnoreCase)) { return false; }
 
@@ -106,23 +107,40 @@ static class BbCustomTypePropagation
             var types = assignmentInstructions
                 .Select(i => InstructionArgToCustomType(section, i.SrcArg1))
                 .ToArray();
-            var typeOption = types.FirstOrNone(t => t != DeclType.Unknown);
+            var typeOption = calleeNameEndsWith("bbObjStore")
+                ? types.Skip(1).FirstOrNone(t => t != DeclType.Unknown)
+                : types.FirstOrNone(t => t != DeclType.Unknown);
             if (!typeOption.TryUnwrap(out var type)) { return false; }
 
             var variables = assignmentInstructions
                 .Select(i => section.Owner.InstructionArgumentToVariable(i.SrcArg1))
                 .OfType<Variable>()
                 .ToArray();
-            foreach (var variable in variables)
+            for (var variableIndex = 0; variableIndex < variables.Length; variableIndex++)
             {
+                var variable = variables[variableIndex];
+                if (calleeNameEndsWith("bbObjStore")
+                    && variableIndex == 0
+                    && variable.DeclType.IsCustomType
+                    && type.IsCustomType
+                    && !variable.DeclType.IsArrayType
+                    && !type.IsArrayType
+                    && variable.DeclType != type)
+                {
+                    variable.DeclType = type;
+                    variable.Trace = variable.Trace.Append($"{section.Owner}: {variable.Name} is {type} because {instruction}");
+                    somethingChanged = true;
+                    continue;
+                }
                 if (variable.DeclType != DeclType.Unknown) { continue; }
 
                 variable.DeclType = type;
                 variable.Trace = variable.Trace.Append($"{section.Owner}: {variable.Name} is {type} because {instruction}");
+                somethingChanged = true;
             }
         }
 
-        return false;
+        return somethingChanged;
     }
 
     private static bool ProcessSection(AssemblySection section)

@@ -20,6 +20,10 @@ static class BbCustomTypeFieldAccessRewrite
         instruction.DestArg = outputVar.Name;
         instruction.SrcArg2 = "";
 
+        // The field access is a stronger type source than an earlier use of
+        // the same SSA temporary in a call or pointer expression.
+        outputVar.DeclType = customType.Fields[(int)fieldIndex].DeclType;
+
         return true;
     }
 

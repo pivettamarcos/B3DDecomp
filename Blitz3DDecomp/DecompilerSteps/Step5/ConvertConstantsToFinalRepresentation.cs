@@ -19,7 +19,12 @@ static class ConvertConstantsToFinalRepresentation
         }
         if (type == DeclType.Float)
         {
-            float floatValue = BitConverter.UInt32BitsToSingle(expression.Value.HexToUint32());
+            if (!expression.Value.TryHexToUint32(out var floatBits))
+            {
+                return expression;
+            }
+
+            float floatValue = BitConverter.UInt32BitsToSingle(floatBits);
             if (floatValue == 0.0f)
             {
                 return new ConstantExpression("0.0");
