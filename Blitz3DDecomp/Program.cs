@@ -136,6 +136,11 @@ internal static class Program
             mainFileLines.Add("Include \"Data.bb\"");
         }
         mainFileLines.Add("");
+        foreach (var dimArray in DimArray.AllDimArrays)
+        {
+            mainFileLines.Add($"Dim {dimArray.Name}{dimArray.ElementDeclType.Suffix}({string.Join(", ", Enumerable.Repeat("0", dimArray.NumDimensions))})");
+        }
+        mainFileLines.Add("");
         var emittedFunctions = new List<Function>();
         var visitedFunctions = new HashSet<Function>();
         void VisitFunction(Function function)
@@ -165,11 +170,6 @@ internal static class Program
         foreach (var function in emittedFunctions)
         {
             mainFileLines.Add($"Include \"Functions/{function.Name}.bb\"");
-        }
-        mainFileLines.Add("");
-        foreach (var dimArray in DimArray.AllDimArrays)
-        {
-            mainFileLines.Add($"Dim {dimArray.Name}{dimArray.ElementDeclType.Suffix}({string.Join(", ", Enumerable.Repeat("0", dimArray.NumDimensions))})");
         }
         mainFileLines.Add("");
         mainFileLines.Add("Const INFINITY# = (999.0) ^ (99999.0)");
