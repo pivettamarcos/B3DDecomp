@@ -13,12 +13,21 @@ static class BbCustomTypeFieldAccessRewrite
         if (outputVar is null) { return false; }
 
         var customType = CustomType.GetTypeMatchingDeclType(ownerVariable.DeclType);
+        if (fieldIndex >= customType.Fields.Count
+            && customType.Name == "astarnode"
+            && fieldIndex is 13 or 14)
+        {
+            customType = CustomType.GetTypeWithName("astardata");
+            ownerVariable.DeclType = new DeclType(".astardata");
+        }
         if (fieldIndex >= customType.Fields.Count) { return false; }
 
         instruction.SrcArg1 = $"{ownerVariable.Name}\\{customType.Fields[(int)fieldIndex].Name}";
         instruction.Name = "mov";
         instruction.DestArg = outputVar.Name;
         instruction.SrcArg2 = "";
+
+        outputVar.DeclType = customType.Fields[(int)fieldIndex].DeclType;
 
         return true;
     }
@@ -67,6 +76,12 @@ static class BbCustomTypeFieldAccessRewrite
         foreach (var section in function.AssemblySections)
         {
             somethingChanged |= ProcessSection(section);
+        }
+        if (function.Name is "astardatainit" or "astargoalestimate"
+            && function.Parameters.FirstOrDefault() is { DeclType.Suffix: ".astarnode" } parameter)
+        {
+            parameter.DeclType = new DeclType(".astardata");
+            somethingChanged = true;
         }
         return somethingChanged;
     }

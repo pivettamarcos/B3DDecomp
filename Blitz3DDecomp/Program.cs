@@ -257,6 +257,7 @@ internal static class Program
                 somethingChanged |= CalleeReturnTypePropagation.Process(function);
                 somethingChanged |= SelfReturnTypePropagation.Process(function);
                 somethingChanged |= HandleIntegerSub.Process(function);
+                somethingChanged |= BbCustomTypeFieldAccessRewrite.Process(function);
             }
             if (!somethingChanged) { break; }
         }

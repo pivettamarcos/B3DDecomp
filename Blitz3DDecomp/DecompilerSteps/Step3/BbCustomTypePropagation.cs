@@ -15,6 +15,24 @@ static class BbCustomTypePropagation
             return variable.DeclType;
         }
 
+        var sourceType = section.Owner.Instructions
+            .Reverse()
+            .Where(i => i.Name == "mov" && i.DestArg == arg)
+            .Select(i => section.Owner.InstructionArgumentToVariable(i.SrcArg1))
+            .OfType<Variable>()
+            .Where(v => !string.IsNullOrEmpty(v.DeclType.Suffix)
+                && v.DeclType != DeclType.Unknown
+                && v.DeclType is { IsCustomType: true, IsArrayType: false })
+            .Select(v => v.DeclType)
+            .FirstOrDefault();
+        if (!string.IsNullOrEmpty(sourceType.Suffix)
+            && sourceType != DeclType.Unknown
+            && sourceType.IsCustomType
+            && !sourceType.IsArrayType)
+        {
+            return sourceType;
+        }
+
         if (arg.StartsWith("@_t", StringComparison.OrdinalIgnoreCase))
         {
             return new DeclType("." + arg[3..]);
