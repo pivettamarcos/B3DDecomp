@@ -23,10 +23,20 @@ static class SelfReturnTypePropagation
                     if (prevInstruction.Name != "call") { return; }
 
                     var callee = Function.GetFunctionByName(prevInstruction.DestArg);
-                    if (!callee.CanReturnTypeBeSourceOfPropagation()) { return; }
+                    if (callee.CanReturnTypeBeSourceOfPropagation())
+                    {
+                        section.Owner.ReturnType = callee.ReturnType;
+                        section.Owner.Trace = section.Owner.Trace.Append($"{section.Owner}: returns {section.Owner.ReturnType} because {prevInstruction}");
+                        return;
+                    }
 
-                    section.Owner.ReturnType = callee.ReturnType;
-                    section.Owner.Trace = section.Owner.Trace.Append($"{section.Owner}: returns {section.Owner.ReturnType} because {prevInstruction}");
+                    if (prevInstruction.ReturnOutputVar is { } returnOutputVar && returnOutputVar.CanBeSourceOfPropagation())
+                    {
+                        section.Owner.ReturnType = returnOutputVar.DeclType;
+                        section.Owner.Trace = section.Owner.Trace.Append($"{section.Owner}: returns {section.Owner.ReturnType} because {prevInstruction} (via {returnOutputVar.Name})");
+                        return;
+                    }
+
                     return;
                 }
 
