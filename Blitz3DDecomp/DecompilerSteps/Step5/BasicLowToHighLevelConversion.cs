@@ -124,9 +124,38 @@ static class BasicLowToHighLevelConversion
 
                 if (derefDest
                     && destVar is Function.DecompGeneratedTempVariable tempDestVar1
-                    && reduceExpression(context.TempToExpression[tempDestVar1]) is AccessExpression accessExpression)
+                    && reduceExpression(context.TempToExpression[tempDestVar1]) is var reducedDestExpression)
                 {
-                    highLevelSection.Statements.Add(new AssignmentStatement(accessExpression, srcExpression));
+                    if (reducedDestExpression is AccessExpression accessExpression)
+                    {
+                        highLevelSection.Statements.Add(new AssignmentStatement(accessExpression, srcExpression));
+                    }
+                    else if (reducedDestExpression is AddExpression
+                             {
+                                 Lhs: VariableExpression { Variable: GlobalVariable lhsGlobal },
+                                 Rhs: var rhsOffset
+                             })
+                    {
+                        highLevelSection.Statements.Add(new FreeStandingExpressionStatement(
+                            new CallExpression(
+                                Function.GetFunctionByName("_builtIn_fpokeint"),
+                                new VariableExpression(lhsGlobal),
+                                rhsOffset,
+                                srcExpression)));
+                    }
+                    else if (reducedDestExpression is AddExpression
+                             {
+                                 Lhs: var lhsOffset,
+                                 Rhs: VariableExpression { Variable: GlobalVariable rhsGlobal }
+                             })
+                    {
+                        highLevelSection.Statements.Add(new FreeStandingExpressionStatement(
+                            new CallExpression(
+                                Function.GetFunctionByName("_builtIn_fpokeint"),
+                                new VariableExpression(rhsGlobal),
+                                lhsOffset,
+                                srcExpression)));
+                    }
                 }
                 else
                 {
