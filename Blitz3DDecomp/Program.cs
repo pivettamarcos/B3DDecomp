@@ -31,7 +31,7 @@ internal static class Program
 
         string[] declsPaths = args.Where(arg => arg.EndsWith(".decls", StringComparison.OrdinalIgnoreCase)).ToArray();
         string[] exePaths = args.Where(arg => arg.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)).ToArray();
-        string[] disasmDirPaths = args.Where(arg => arg.EndsWith("_disasm/", StringComparison.OrdinalIgnoreCase)).ToArray();
+        string[] disasmDirPaths = args.Where(arg => arg.IsDisasmPath()).ToArray();
 
         if (exePaths.Any())
         {
@@ -65,7 +65,14 @@ internal static class Program
                 return;
         }
 
-        string decompPath = disasmPath.Replace("_disasm", "_decomp");
+        var disasmDirectoryPath = disasmPath.TrimEnd('/', '\\');
+        var disasmDirectoryName = Path.GetFileName(disasmDirectoryPath);
+        var decompDirectoryName = disasmDirectoryName.EndsWith("_disasm", StringComparison.OrdinalIgnoreCase)
+            ? disasmDirectoryName[..^"_disasm".Length] + "_decomp"
+            : disasmDirectoryName == "disasm"
+                ? "decomp"
+                : disasmDirectoryName + "_decomp";
+        string decompPath = Path.Combine(Path.GetDirectoryName(disasmDirectoryPath)!, decompDirectoryName);
         DirectoryUtils.RecreateDirectory(decompPath);
 
         CurrentCompiler.Value = Enum.Parse<Compiler>(
@@ -118,21 +125,46 @@ internal static class Program
         mainFileLines.Add($"; {disasmPath.CleanupPath().Split('/').Last(s => !string.IsNullOrWhiteSpace(s))}");
         mainFileLines.Add($"; Decompiled on {DateTime.UtcNow}");
         mainFileLines.Add("");
+        foreach (var customType in CustomType.AllTypes)
+        {
+            mainFileLines.Add($"Include \"Types/{customType.Name}.bb\"");
+        }
+        mainFileLines.Add("");
         mainFileLines.Add("Include \"Globals.bb\"");
         if (File.Exists(decompPath.AppendToPath("Data.bb")))
         {
             mainFileLines.Add("Include \"Data.bb\"");
         }
         mainFileLines.Add("");
-        foreach (var function in referencedFunctions)
+        var emittedFunctions = new List<Function>();
+        var visitedFunctions = new HashSet<Function>();
+        void VisitFunction(Function function)
         {
-            if (!function.HighLevelStatements.Any()) { continue; }
-            mainFileLines.Add($"Include \"Functions/{function.Name}.bb\"");
+            if (!visitedFunctions.Add(function)) { return; }
+
+            foreach (var instruction in function.Instructions.Where(i => i.Name == "call"))
+            {
+                var callee = Function.GetFunctionByName(instruction.DestArg);
+                if (referencedFunctions.Contains(callee))
+                {
+                    VisitFunction(callee);
+                }
+            }
+
+            if (function.HighLevelStatements.Any())
+            {
+                emittedFunctions.Add(function);
+            }
         }
-        mainFileLines.Add("");
-        foreach (var customType in CustomType.AllTypes)
+
+        foreach (var function in referencedFunctions.OrderBy(function => function.Name))
         {
-            mainFileLines.Add($"Include \"Types/{customType.Name}.bb\"");
+            VisitFunction(function);
+        }
+
+        foreach (var function in emittedFunctions)
+        {
+            mainFileLines.Add($"Include \"Functions/{function.Name}.bb\"");
         }
         mainFileLines.Add("");
         foreach (var dimArray in DimArray.AllDimArrays)

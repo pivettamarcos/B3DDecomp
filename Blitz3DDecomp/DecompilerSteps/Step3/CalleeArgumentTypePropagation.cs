@@ -17,6 +17,10 @@ static class CalleeArgumentTypePropagation
 
             for (int i = 0; i < assignmentIndices.Length; i++)
             {
+                // Optional ABI arguments may be present without a declared
+                // parameter, particularly for built-in functions.
+                if (i >= callee.Parameters.Count) { continue; }
+
                 var assignmentInstruction = section.Owner.Instructions[assignmentIndices[i]];
                 if (section.Owner.InstructionArgumentToVariable(assignmentInstruction.SrcArg1) is { } variable)
                 {

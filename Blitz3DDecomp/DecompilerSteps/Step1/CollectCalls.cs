@@ -71,9 +71,12 @@ static class CollectCalls
                 }
             }
 
+            // A callee can leave trailing ABI parameters unused, so its body alone
+            // underestimates its arity. Keep collecting until the call's stack
+            // reservation has been reached.
             if (function != null
                 && foundArgs.ContainsKey(0)
-                && foundArgs.Count >= function.Parameters.Count)
+                && espDiff < 0)
             {
                 finalI = i;
                 break;
@@ -82,7 +85,8 @@ static class CollectCalls
 
         if (function != null)
         {
-            while (function.Parameters.Count < foundArgs.Count)
+            var foundArgumentCount = foundArgs.Keys.DefaultIfEmpty(-4).Max() / 4 + 1;
+            while (function.Parameters.Count < foundArgumentCount)
             {
                 var parameterIndex = function.Parameters.Count;
                 function.Parameters.Add(new Function.Parameter(function, $"arg{parameterIndex}", parameterIndex)
@@ -90,7 +94,7 @@ static class CollectCalls
                     DeclType = DeclType.Unknown
                 });
             }
-            if (foundArgs.Count != function.Parameters.Count) { Debugger.Break(); }
+            if (foundArgs.Count != foundArgumentCount) { Debugger.Break(); }
             espDiff += function.Parameters.Count * 4;
         }
         else

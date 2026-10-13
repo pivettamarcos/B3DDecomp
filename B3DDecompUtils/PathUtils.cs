@@ -12,6 +12,9 @@ public static class PathUtils
     }
 
     public static bool IsDisasmPath(this string path)
-        => path.EndsWith("_disasm/", StringComparison.OrdinalIgnoreCase)
-           || path.EndsWith("_disasm", StringComparison.OrdinalIgnoreCase);
+    {
+        var directoryName = Path.GetFileName(path.TrimEnd('/', '\\'));
+        return directoryName.EndsWith("_disasm", StringComparison.OrdinalIgnoreCase)
+               || directoryName.Equals("disasm", StringComparison.OrdinalIgnoreCase);
+    }
 }

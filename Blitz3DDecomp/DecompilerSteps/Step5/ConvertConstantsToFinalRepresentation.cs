@@ -70,6 +70,14 @@ static class ConvertConstantsToFinalRepresentation
             }
             Debugger.Break();
         }
+
+        // Raw constants use C-style hexadecimal in the disassembly. BlitzBasic
+        // requires '$' even when type inference cannot classify the value.
+        if (expression.Value.TryHexToUint32(out var rawValue))
+        {
+            return new ConstantExpression("$" + rawValue.ToString("X2"));
+        }
+
         return expression;
     }
 

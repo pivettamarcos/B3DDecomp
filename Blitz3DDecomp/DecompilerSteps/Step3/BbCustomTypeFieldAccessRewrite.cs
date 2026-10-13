@@ -13,6 +13,7 @@ static class BbCustomTypeFieldAccessRewrite
         if (outputVar is null) { return false; }
 
         var customType = CustomType.GetTypeMatchingDeclType(ownerVariable.DeclType);
+        if (fieldIndex >= customType.Fields.Count) { return false; }
 
         instruction.SrcArg1 = $"{ownerVariable.Name}\\{customType.Fields[(int)fieldIndex].Name}";
         instruction.Name = "mov";

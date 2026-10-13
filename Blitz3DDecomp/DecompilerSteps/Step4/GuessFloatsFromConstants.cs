@@ -55,6 +55,8 @@ static class GuessFloatsFromConstants
 
                     for (int i = 0; i < assignmentIndices.Length; i++)
                     {
+                        if (i >= callee.Parameters.Count) { continue; }
+
                         var parameter = callee.Parameters[i];
                         var assignmentInstruction = section.Owner.Instructions[assignmentIndices[i]];
 
