@@ -73,15 +73,28 @@ static class BbCustomTypeFieldAccessRewrite
     public static bool Process(Function function)
     {
         bool somethingChanged = false;
-        foreach (var section in function.AssemblySections)
-        {
-            somethingChanged |= ProcessSection(section);
-        }
-        if (function.Name is "astardatainit" or "astargoalestimate"
+        if (function.Name is "astardatainit" or "astargoalestimate" or "astarmakepath"
             && function.Parameters.FirstOrDefault() is { DeclType.Suffix: ".astarnode" } parameter)
         {
             parameter.DeclType = new DeclType(".astardata");
             somethingChanged = true;
+        }
+        if (function.Name == "astarfindpath"
+            && function.LocalVariables.FirstOrDefault(local => local.Name == "local0") is { DeclType.Suffix: ".astarnode" } local)
+        {
+            local.DeclType = new DeclType(".astardata");
+            somethingChanged = true;
+        }
+        if (function.Name == "astarfindpath"
+            && function.DecompGeneratedTempVars.GetValueOrDefault("eax_003D") is { } temp
+            && temp.DeclType == DeclType.Unknown)
+        {
+            temp.DeclType = new DeclType(".astardata");
+            somethingChanged = true;
+        }
+        foreach (var section in function.AssemblySections)
+        {
+            somethingChanged |= ProcessSection(section);
         }
         return somethingChanged;
     }

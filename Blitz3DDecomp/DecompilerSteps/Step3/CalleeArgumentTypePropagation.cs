@@ -28,6 +28,15 @@ static class CalleeArgumentTypePropagation
                     {
                         if (!variable.CanBeSourceOfPropagation()) { continue; }
                         if (callee.IsBuiltIn) { continue; }
+                        if (callee.Parameters[i].DeclType is { IsCustomType: true }
+                            && variable.DeclType is { IsCustomType: true }
+                            && callee.Parameters[i].DeclType != variable.DeclType)
+                        {
+                            variable.DeclType = callee.Parameters[i].DeclType;
+                            somethingChanged = true;
+                            variable.Trace = callee.Parameters[i].Trace.Append($"{section.Owner}: {variable.Name} is {variable.DeclType} because {callee.Name} arg {i}");
+                            continue;
+                        }
                         if (callee.Parameters[i].DeclType != DeclType.Unknown) { continue; }
 
                         callee.Parameters[i].DeclType = variable.DeclType;

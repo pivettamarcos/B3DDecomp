@@ -105,6 +105,12 @@ static class ConvertConstantsToFinalRepresentation
                 case DimAccessExpression dimAccessExpression:
                     return dimAccessExpression.Owner.ElementDeclType;
                 case FieldAccessExpression fieldAccessExpression:
+                    if (fieldAccessExpression.Owner is VariableExpression { Variable.DeclType.IsCustomType: true } ownerVariable)
+                    {
+                        return CustomType.GetTypeMatchingDeclType(ownerVariable.Variable.DeclType)
+                            .Fields.First(field => field.Name == fieldAccessExpression.Field.Name)
+                            .DeclType;
+                    }
                     return fieldAccessExpression.Field.DeclType;
                 case VariableExpression variableExpression:
                     return variableExpression.Variable.DeclType;
