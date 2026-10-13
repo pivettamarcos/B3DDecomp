@@ -10,6 +10,12 @@ static class ConvertConstantsToFinalRepresentation
 {
     public static Expression ConvertConstant(ConstantExpression expression, DeclType type)
     {
+        if (expression.Value.StartsWith("@StringConstant_", StringComparison.Ordinal)
+            && StringConstants.SymbolToValue.TryGetValue(expression.Value[1..], out var untypedString))
+        {
+            return new ConstantExpression($"\"{untypedString}\"");
+        }
+
         if (type == DeclType.Int)
         {
             if (expression.Value.TryHexToUint32(out var intValue))

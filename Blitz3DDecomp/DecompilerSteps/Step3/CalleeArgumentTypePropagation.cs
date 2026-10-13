@@ -28,7 +28,8 @@ static class CalleeArgumentTypePropagation
                     {
                         if (!variable.CanBeSourceOfPropagation()) { continue; }
                         if (callee.IsBuiltIn) { continue; }
-                        if (callee.Parameters[i].DeclType != DeclType.Unknown) { continue; }
+                        if (callee.Parameters[i].DeclType != DeclType.Unknown
+                            && !(callee.Parameters[i].DeclType == DeclType.Int && variable.DeclType.IsCustomType)) { continue; }
 
                         callee.Parameters[i].DeclType = variable.DeclType;
                         somethingChanged = true;

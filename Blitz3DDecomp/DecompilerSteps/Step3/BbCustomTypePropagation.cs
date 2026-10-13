@@ -116,22 +116,8 @@ static class BbCustomTypePropagation
                 .Select(i => section.Owner.InstructionArgumentToVariable(i.SrcArg1))
                 .OfType<Variable>()
                 .ToArray();
-            for (var variableIndex = 0; variableIndex < variables.Length; variableIndex++)
+            foreach (var variable in variables)
             {
-                var variable = variables[variableIndex];
-                if (calleeNameEndsWith("bbObjStore")
-                    && variableIndex == 0
-                    && variable.DeclType.IsCustomType
-                    && type.IsCustomType
-                    && !variable.DeclType.IsArrayType
-                    && !type.IsArrayType
-                    && variable.DeclType != type)
-                {
-                    variable.DeclType = type;
-                    variable.Trace = variable.Trace.Append($"{section.Owner}: {variable.Name} is {type} because {instruction}");
-                    somethingChanged = true;
-                    continue;
-                }
                 if (variable.DeclType != DeclType.Unknown) { continue; }
 
                 variable.DeclType = type;
