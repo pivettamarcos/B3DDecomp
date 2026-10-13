@@ -21,16 +21,25 @@ static class VectorTypeDeduction
 
             var registerToArg = section.Instructions[i - 1];
 
-            var resultToVariable = section.Instructions[i + 1];
+            Instruction? resultToVariable = null;
+            for (var resultIndex = i + 1; resultIndex <= i + 3 && resultIndex < section.Instructions.Length; resultIndex++)
+            {
+                var candidate = section.Instructions[resultIndex];
+                if (candidate.Name == "mov" && candidate.SrcArg1.StartsWith("eax", StringComparison.OrdinalIgnoreCase))
+                {
+                    resultToVariable = candidate;
+                    break;
+                }
+            }
+            if (resultToVariable is null) { continue; }
+
             var variable = function.InstructionArgumentToVariable(resultToVariable.DestArg);
 
             if (vecTypeToRegister.Name == "mov"
                 && vecType.IsArrayType
                 && vecTypeToRegister.DestArg == registerToArg.SrcArg1
-                && resultToVariable is { Name: "mov" }
-                && resultToVariable.SrcArg1.StartsWith("eax", StringComparison.OrdinalIgnoreCase) 
-                && variable != null
-                && variable.DeclType == DeclType.Unknown)
+                 && variable != null
+                  && (variable.DeclType == DeclType.Unknown || variable is GlobalVariable))
             {
                 variable.Trace = variable.Trace.Append($"{function}: {variable.Name} is {vecType} because {vecTypeToRegister}");
                 variable.DeclType = vecType;

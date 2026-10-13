@@ -440,7 +440,10 @@ static class BasicLowToHighLevelConversion
                     }
                     else if (callee.Name is "_builtIn__bbVecAlloc")
                     {
-                        i++;
+                        // The Blitz compiler allocates vectors from their typed
+                        // declarations. The low-level call and its result move
+                        // are implementation details, not source statements.
+                        i += 3;
                     }
                     else if (callee.Name is "_builtIn__bbObjEachFirst" or "_builtIn__bbObjEachFirst")
                     {
