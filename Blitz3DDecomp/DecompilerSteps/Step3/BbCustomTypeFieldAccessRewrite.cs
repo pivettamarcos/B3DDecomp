@@ -105,6 +105,13 @@ static class BbCustomTypeFieldAccessRewrite
             temp.DeclType = new DeclType(".astardata");
             somethingChanged = true;
         }
+        if (function.Name == "freeclient"
+            && function.DecompGeneratedTempVars.GetValueOrDefault("eax_002B") is { } clientTemp
+            && !clientTemp.DeclType.IsCustomType)
+        {
+            clientTemp.DeclType = new DeclType(".tclient");
+            somethingChanged = true;
+        }
         foreach (var section in function.AssemblySections)
         {
             somethingChanged |= ProcessSection(section);
