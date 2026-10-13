@@ -71,7 +71,9 @@ static class CollectCalls
                 }
             }
 
-            if (function != null && foundArgs.Count >= function.Parameters.Count)
+            if (function != null
+                && foundArgs.ContainsKey(0)
+                && foundArgs.Count >= function.Parameters.Count)
             {
                 finalI = i;
                 break;
@@ -80,6 +82,14 @@ static class CollectCalls
 
         if (function != null)
         {
+            while (function.Parameters.Count < foundArgs.Count)
+            {
+                var parameterIndex = function.Parameters.Count;
+                function.Parameters.Add(new Function.Parameter(function, $"arg{parameterIndex}", parameterIndex)
+                {
+                    DeclType = DeclType.Unknown
+                });
+            }
             if (foundArgs.Count != function.Parameters.Count) { Debugger.Break(); }
             espDiff += function.Parameters.Count * 4;
         }
