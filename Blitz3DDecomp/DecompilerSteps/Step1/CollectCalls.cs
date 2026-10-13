@@ -59,11 +59,13 @@ static class CollectCalls
                     thisOffset = int.Parse(relativeMatch.Groups[1].Value, NumberStyles.HexNumber);
                 }
 
-                if (foundArgs.ContainsKey(-espDiff + thisOffset))
+                // The write closest to the call is the argument that actually takes effect: a
+                // nested call's own argument setup (which appears further up) may write the same
+                // stack slot, so keep the first write we encounter while crawling upwards.
+                if (!foundArgs.ContainsKey(-espDiff + thisOffset))
                 {
-                    Debugger.Break();
+                    foundArgs[-espDiff + thisOffset] = i;
                 }
-                foundArgs[-espDiff + thisOffset] = i;
 
                 if ((function != null && -espDiff + thisOffset > function.Parameters.Count * 4) || -espDiff + thisOffset < 0)
                 {
